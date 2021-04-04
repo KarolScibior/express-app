@@ -1,88 +1,26 @@
 const Tour = require('../models/tourModel')
-const APIFeatures = require('../utils/apiFeature')
-const AppError = require('../utils/appError')
 const catchAsync = require('../utils/catchAsync')
+const {
+  deleteOne,
+  updateOne,
+  createOne,
+  getOne,
+  getAll,
+} = require('./handlerFactory')
 
-exports.aliasTopTours = (req, res, next) => {
-  req.query.limit = '5'
-  req.query.sort = '-ratingsAverage,price'
-  req.query.fields = 'name,price,ratingsAverage,summary,difficulty'
-  next()
-}
+// CRUD
 
-exports.getAllTours = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate()
+exports.getAllTours = getAll(Tour)
 
-  const tours = await features.query
+exports.getTour = getOne(Tour, { path: 'reviews' })
 
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    data: {
-      tours,
-    },
-  })
-})
+exports.createTour = createOne(Tour)
 
-exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id)
+exports.updateTour = updateOne(Tour)
 
-  if (!tour) {
-    return next(new AppError('No tour found with that ID', 404))
-  }
+exports.deleteTour = deleteOne(Tour)
 
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour,
-    },
-  })
-})
-
-exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body)
-
-  res.status(201).json({
-    status: 'success',
-    data: {
-      tour: newTour,
-    },
-  })
-})
-
-exports.updateTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  })
-
-  if (!tour) {
-    return next(new AppError('No tour found with that ID', 404))
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour,
-    },
-  })
-})
-
-exports.deleteTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndRemove(req.params.id)
-
-  if (!tour) {
-    return next(new AppError('No tour found with that ID', 404))
-  }
-
-  res.status(204).json({
-    status: 'success',
-  })
-})
+// CUSTOM CONTROLLERS
 
 exports.getTourStats = catchAsync(async (req, res, next) => {
   const stats = await Tour.aggregate([
@@ -160,3 +98,12 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
     },
   })
 })
+
+// MIDDLEWARES
+
+exports.aliasTopTours = (req, res, next) => {
+  req.query.limit = '5'
+  req.query.sort = '-ratingsAverage,price'
+  req.query.fields = 'name,price,ratingsAverage,summary,difficulty'
+  next()
+}
